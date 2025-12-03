@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "29289752248",
+    "project_id": "smartly-23a2b",
+    "storage_bucket": "smartly-23a2b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:29289752248:android:2c048597123a4b0f43764d",
+        "android_client_info": {
+          "package_name": "com.example.smartly"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3fSHhBTd0wUshoVLY1eaaJyxOxwbOnZo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

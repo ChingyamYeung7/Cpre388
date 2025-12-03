@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Token Shop"
+        android:textSize="22sp"
+        android:textStyle="bold"/>
+
+    <TextView
+        android:id="@+id/tvShopMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:layout_marginTop="4dp"/>
+
+    <Button
+        android:id="@+id/btnBuyLife"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Buy Extra Life (30 tokens)"
+        android:layout_marginTop="12dp"/>
+
+    <Button
+        android:id="@+id/btnBuyHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Buy Hint (20 tokens)"/>
+
+    <Button
+        android:id="@+id/btnBuyMultiplier"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Buy Score x2 (50 tokens)"/>
+
+    <Button
+        android:id="@+id/btnBuyAvatarGlow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Buy Avatar Glow (40 tokens)"/>
+    <TextView
+        android:id="@+id/tvLifeTimer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Next life in 05:00"
+        android:layout_marginTop="12dp"
+        android:textSize="16sp"
+        android:textStyle="italic"/>
+
+</LinearLayout>
