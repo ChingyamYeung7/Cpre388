@@ -1,13 +1,14 @@
 {
   "project_info": {
-    "project_number": "29289752248",
-    "project_id": "smartly-23a2b",
-    "storage_bucket": "smartly-23a2b.firebasestorage.app"
+    "project_number": "351718363206",
+    "firebase_url": "https://smartly-app-513ed-default-rtdb.firebaseio.com",
+    "project_id": "smartly-app-513ed",
+    "storage_bucket": "smartly-app-513ed.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:29289752248:android:2c048597123a4b0f43764d",
+        "mobilesdk_app_id": "1:351718363206:android:ffec4af6c215a566757a47",
         "android_client_info": {
           "package_name": "com.example.smartly"
         }
@@ -15,7 +16,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyD3fSHhBTd0wUshoVLY1eaaJyxOxwbOnZo"
+          "current_key": "AIzaSyA3Hrc8E6y-bJp2xGQFpFQv6IGR4dVCk9g"
         }
       ],
       "services": {

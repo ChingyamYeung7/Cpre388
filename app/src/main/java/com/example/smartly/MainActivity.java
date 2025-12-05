@@ -12,6 +12,13 @@ import com.example.smartly.UI.LeaderboardFragment;
 import com.example.smartly.UI.ProfileFragment;
 import com.example.smartly.UI.ShopFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import android.util.Log;
+import android.content.Intent;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -19,12 +26,19 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvHeaderTokens;
     private TextView tvHeaderLives;
     private BottomNavigationView bottomNav;
+    FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() == null) {
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
         tvHeaderUsername = findViewById(R.id.tvHeaderUsername);
         tvHeaderTokens   = findViewById(R.id.tvHeaderTokens);
         tvHeaderLives    = findViewById(R.id.tvHeaderLives);
@@ -53,6 +67,8 @@ public class MainActivity extends AppCompatActivity {
         // default screen
         loadFragment(new HomeFragment());
         updateHeader();
+
+        db = FirebaseFirestore.getInstance();
     }
 
     private void loadFragment(@NonNull Fragment fragment) {
@@ -79,5 +95,16 @@ public class MainActivity extends AppCompatActivity {
         // Tokens + lives
         tvHeaderTokens.setText("  💎 " + gs.tokens);
         tvHeaderLives.setText("  ❤️ " + gs.lives + "/" + GameState.MAX_LIVES);
+    }
+
+    private void saveUserToDatabase(User user) {
+        db.collection("users")
+                .add(user)
+                .addOnSuccessListener(documentReference ->
+                        android.util.Log.d("SmartlyFire", "User added with ID: " + documentReference.getId())
+                )
+                .addOnFailureListener(e ->
+                        android.util.Log.w("SmartlyFire", "Error adding user", e)
+                );
     }
 }
