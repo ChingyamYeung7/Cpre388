@@ -33,17 +33,17 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() == null) {
-            Intent intent = new Intent(this, LoginActivity.class);
-            startActivity(intent);
+        // If not logged in, go to LoginActivity
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+            startActivity(new Intent(this, LoginActivity.class));
             finish();
             return;
         }
+
         tvHeaderUsername = findViewById(R.id.tvHeaderUsername);
         tvHeaderTokens   = findViewById(R.id.tvHeaderTokens);
         tvHeaderLives    = findViewById(R.id.tvHeaderLives);
         bottomNav        = findViewById(R.id.bottomNav);
-
         bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             Fragment fragment = null;

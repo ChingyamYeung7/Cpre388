@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace "com.example.smartly"
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.example.smartly"
@@ -30,5 +30,6 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.fragment:fragment:1.8.4'
+    implementation 'com.google.firebase:firebase-auth:22.3.0'
     implementation libs.activity
 }

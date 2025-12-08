@@ -1,7 +1,7 @@
 package com.example.smartly.UI;
 
-import static android.content.Context.MODE_PRIVATE;
-
+import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -20,11 +20,13 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.smartly.GameState;
+import com.example.smartly.LoginActivity;
 import com.example.smartly.MainActivity;
 import com.example.smartly.R;
-import com.example.smartly.model.UserProfile;
 import com.example.smartly.model.Course;
+import com.example.smartly.model.UserProfile;
 import com.example.smartly.util.CourseRepository;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class ProfileFragment extends Fragment {
 
@@ -32,13 +34,12 @@ public class ProfileFragment extends Fragment {
     private RadioGroup rgAvatar;
     private TextView tvCurrentCourse;
 
-    public ProfileFragment() {}
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
+
         View v = inflater.inflate(R.layout.fragment_profile, container, false);
 
         etUsername = v.findViewById(R.id.etUsername);
@@ -47,12 +48,15 @@ public class ProfileFragment extends Fragment {
         Button btnSave = v.findViewById(R.id.btnSaveProfile);
         Button btnLoad = v.findViewById(R.id.btnLoadProfile);
         Button btnDelete = v.findViewById(R.id.btnDeleteProfile);
+        Button btnLogout = v.findViewById(R.id.btnLogout);
         tvCurrentCourse = v.findViewById(R.id.tvCurrentCourse);
+
         updateCurrentCourse();
 
         btnSave.setOnClickListener(view -> saveProfile());
         btnLoad.setOnClickListener(view -> loadProfile());
         btnDelete.setOnClickListener(view -> deleteProfile());
+        btnLogout.setOnClickListener(view -> logout());
 
         return v;
     }
@@ -72,7 +76,8 @@ public class ProfileFragment extends Fragment {
         UserProfile profile = new UserProfile(username, email, avatar);
         GameState.get().profile = profile;
 
-        SharedPreferences prefs = requireContext().getSharedPreferences("smartly_prefs", MODE_PRIVATE);
+        SharedPreferences prefs = requireContext()
+                .getSharedPreferences("smartly_prefs", Context.MODE_PRIVATE);
         prefs.edit()
                 .putString("username", username)
                 .putString("email", email)
@@ -87,10 +92,12 @@ public class ProfileFragment extends Fragment {
     }
 
     private void loadProfile() {
-        SharedPreferences prefs = requireContext().getSharedPreferences("smartly_prefs", MODE_PRIVATE);
+        SharedPreferences prefs = requireContext()
+                .getSharedPreferences("smartly_prefs", Context.MODE_PRIVATE);
+
         String username = prefs.getString("username", "");
         String email = prefs.getString("email", "");
-        String avatar = prefs.getString("avatar", "");
+        String avatar = prefs.getString("avatar", "🙂");
 
         etUsername.setText(username);
         etEmail.setText(email);
@@ -101,6 +108,7 @@ public class ProfileFragment extends Fragment {
                 RadioButton rb = (RadioButton) child;
                 if (avatar.equals(rb.getText().toString())) {
                     rb.setChecked(true);
+                    break;
                 }
             }
         }
@@ -112,6 +120,22 @@ public class ProfileFragment extends Fragment {
         }
 
         Toast.makeText(getContext(), "Profile loaded", Toast.LENGTH_SHORT).show();
+    }
+
+    private void deleteProfile() {
+        SharedPreferences prefs = requireContext()
+                .getSharedPreferences("smartly_prefs", Context.MODE_PRIVATE);
+        prefs.edit().clear().apply();
+        etUsername.setText("");
+        etEmail.setText("");
+        rgAvatar.clearCheck();
+        GameState.get().profile = null;
+
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).updateHeader();
+        }
+
+        Toast.makeText(getContext(), "Profile deleted", Toast.LENGTH_SHORT).show();
     }
 
     private void updateCurrentCourse() {
@@ -132,18 +156,16 @@ public class ProfileFragment extends Fragment {
         }
     }
 
-    private void deleteProfile() {
-        SharedPreferences prefs = requireContext().getSharedPreferences("smartly_prefs", MODE_PRIVATE);
-        prefs.edit().clear().apply();
-        etUsername.setText("");
-        etEmail.setText("");
-        rgAvatar.clearCheck();
+    private void logout() {
+        // Sign out from Firebase
+        FirebaseAuth.getInstance().signOut();
+
+        // Clear in-memory state if you want
         GameState.get().profile = null;
 
-        if (getActivity() instanceof MainActivity) {
-            ((MainActivity) getActivity()).updateHeader();
-        }
-
-        Toast.makeText(getContext(), "Profile deleted", Toast.LENGTH_SHORT).show();
+        // Go back to LoginActivity and clear back stack
+        Intent intent = new Intent(requireContext(), LoginActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
     }
 }

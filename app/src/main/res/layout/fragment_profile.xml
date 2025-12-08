@@ -80,7 +80,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Delete Profile"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="8dp" />
+
+        <!-- NEW: Logout button -->
+        <Button
+            android:id="@+id/btnLogout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Log out"
+            android:layout_marginTop="8dp" />
 
         <!-- Current course display -->
         <TextView
