@@ -2,6 +2,7 @@ package com.example.smartly;
 
 import android.os.Bundle;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -20,6 +21,9 @@ import android.util.Log;
 import android.content.Intent;
 import com.google.firebase.auth.FirebaseAuth;
 
+import com.example.smartly.GameState;
+import com.example.smartly.User;
+
 public class MainActivity extends AppCompatActivity {
 
     private TextView tvHeaderUsername;
@@ -33,9 +37,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // If not logged in, go to LoginActivity
-        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
-            startActivity(new Intent(this, LoginActivity.class));
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() == null) {
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivity(intent);
             finish();
             return;
         }
@@ -44,16 +48,32 @@ public class MainActivity extends AppCompatActivity {
         tvHeaderTokens   = findViewById(R.id.tvHeaderTokens);
         tvHeaderLives    = findViewById(R.id.tvHeaderLives);
         bottomNav        = findViewById(R.id.bottomNav);
+
         bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             Fragment fragment = null;
 
             if (id == R.id.nav_home) {
                 fragment = new HomeFragment();
+
+            } else if (id == R.id.nav_write) {
+                // Write tab = open/continue quiz for current course
+                String courseId = GameState.get().currentCourseId;
+                if (courseId == null) {
+                    Toast.makeText(this,
+                            "Choose a task from Home first.",
+                            Toast.LENGTH_SHORT).show();
+                    fragment = new HomeFragment();
+                } else {
+                    fragment = com.example.smartly.UI.QuizFragment.newInstance(courseId);
+                }
+
             } else if (id == R.id.nav_leaderboard) {
                 fragment = new LeaderboardFragment();
+
             } else if (id == R.id.nav_profile) {
                 fragment = new ProfileFragment();
+
             } else if (id == R.id.nav_shop) {
                 fragment = new ShopFragment();
             }
@@ -69,6 +89,13 @@ public class MainActivity extends AppCompatActivity {
         updateHeader();
 
         db = FirebaseFirestore.getInstance();
+    }
+
+    // Called from HomeFragment when a task is selected
+    public void openWriteTabForCurrentCourse() {
+        if (bottomNav != null) {
+            bottomNav.setSelectedItemId(R.id.nav_write);
+        }
     }
 
     private void loadFragment(@NonNull Fragment fragment) {

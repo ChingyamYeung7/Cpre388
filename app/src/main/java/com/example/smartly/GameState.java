@@ -13,7 +13,7 @@ public class GameState {
     private GameState() {
         // default starting values
         tokens = 0;
-        lives = 3; // start with 3 lives
+        lives = 3;                 // start with 3 lives (3/5)
         highScore = 0;
         scoreMultiplier = false;
         avatarGlow = false;
@@ -37,7 +37,7 @@ public class GameState {
     // Which course the user is currently on
     public String currentCourseId;
 
-    // Set of finished courses for HomeFragment / ProfileFragment
+    // Set of finished courses
     public Set<String> completedCourses;
 
     // 💎 currency for shop
@@ -45,11 +45,11 @@ public class GameState {
 
     // ❤️ lives
     public int lives;
-    // max lives
     public static final int MAX_LIVES = 5;
 
     // life regen: 1 life every 5 minutes
     private static final long LIFE_INTERVAL_MILLIS = 5L * 60L * 1000L;
+
     // when we last started counting toward the next life
     public long lastLifeTimeMillis;
 
@@ -138,5 +138,16 @@ public class GameState {
         long elapsed = now - lastLifeTimeMillis;
         long remaining = LIFE_INTERVAL_MILLIS - elapsed;
         return Math.max(remaining, 0);
+    }
+
+    /** Lose one life when the user makes a mistake. Returns true if life was lost. */
+    public boolean loseLife() {
+        if (lives <= 0) {
+            return false;           // already at 0, don't go negative
+        }
+        lives--;
+        // restart the regen timer from now
+        lastLifeTimeMillis = System.currentTimeMillis();
+        return true;
     }
 }
