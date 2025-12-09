@@ -1,6 +1,11 @@
 package com.example.smartly;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import com.example.smartly.model.UserProfile;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -10,21 +15,6 @@ public class GameState {
     // ---------- Singleton ----------
     private static GameState instance;
 
-    private GameState() {
-        // default starting values
-        tokens = 0;
-        lives = 3;                 // start with 3 lives (3/5)
-        highScore = 0;
-        scoreMultiplier = false;
-        avatarGlow = false;
-        currentCourseId = null;
-        profile = null;
-        completedCourses = new HashSet<>();
-
-        // start life timer from "now"
-        lastLifeTimeMillis = System.currentTimeMillis();
-    }
-
     public static GameState get() {
         if (instance == null) {
             instance = new GameState();
@@ -32,37 +22,188 @@ public class GameState {
         return instance;
     }
 
-    // ---------- Basic game state ----------
+    private GameState() {
+        // Default starting values (can be overwritten by loadFromPrefs)
+        tokens = 0;
+        lives = 3; // Start at 3/5 like you wanted
+        highScore = 0;
+        scoreMultiplier = false;
+        avatarGlow = false;
+        currentCourseId = null;
+        profile = null;
+        completedCourses = new HashSet<>();
+        lastLifeTimeMillis = System.currentTimeMillis();
+    }
 
-    // Which course the user is currently on
+    // ---------- Constants ----------
+    public static final int MAX_LIVES = 5;
+    // 1 life every 5 minutes
+    private static final long LIFE_INTERVAL_MILLIS = 5L * 60L * 1000L;
+
+    // SharedPreferences
+    private static final String PREFS_NAME = "smartly_state";
+    private static final String KEY_TOKENS = "tokens";
+    private static final String KEY_LIVES = "lives";
+    private static final String KEY_LAST_LIFE_TIME = "last_life_time";
+    private static final String KEY_COMPLETED_COURSES = "completed_courses";
+    private static final String KEY_USER_ID = "user_id";
+
+    // ---------- Game state fields ----------
+
+    // Currently selected course for Write tab / quiz
     public String currentCourseId;
 
-    // Set of finished courses
+    // Finished courses (for color change etc.)
     public Set<String> completedCourses;
 
-    // 💎 currency for shop
+    // 💎 currency
     public int tokens;
 
     // ❤️ lives
     public int lives;
-    public static final int MAX_LIVES = 5;
 
-    // life regen: 1 life every 5 minutes
-    private static final long LIFE_INTERVAL_MILLIS = 5L * 60L * 1000L;
-
-    // when we last started counting toward the next life
+    // last timestamp used for regen
     public long lastLifeTimeMillis;
 
+    // Optional global high score
     public int highScore;
 
-    // Power-ups from shop
+    // Shop power-ups
     public boolean scoreMultiplier;
     public boolean avatarGlow;
 
-    // Profile for ProfileFragment / header
+    // Profile for header & ProfileFragment
     public UserProfile profile;
 
-    // ---------- Helper methods ----------
+    // ---------- Persistence helpers ----------
+
+    /** Load hearts, tokens, completed courses *for this Firebase user*. Call once in MainActivity.onCreate(). */
+    public void loadFromPrefs(Context context) {
+        SharedPreferences sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+
+        FirebaseUser current = FirebaseAuth.getInstance().getCurrentUser();
+        String currentUserId = (current != null) ? current.getUid() : null;
+        String savedUserId = sp.getString(KEY_USER_ID, null);
+
+        if (savedUserId != null && currentUserId != null && !savedUserId.equals(currentUserId)) {
+            // 👉 Different account than last time → reset progress for this new user
+            tokens = 0;
+            lives = 3;
+            completedCourses = new HashSet<>();
+            lastLifeTimeMillis = System.currentTimeMillis();
+
+            sp.edit()
+                    .putString(KEY_USER_ID, currentUserId)
+                    .putInt(KEY_TOKENS, tokens)
+                    .putInt(KEY_LIVES, lives)
+                    .putLong(KEY_LAST_LIFE_TIME, lastLifeTimeMillis)
+                    .putStringSet(KEY_COMPLETED_COURSES, completedCourses)
+                    .apply();
+            return;
+        }
+
+        if (currentUserId != null && savedUserId == null) {
+            // First time for this user
+            sp.edit().putString(KEY_USER_ID, currentUserId).apply();
+        }
+
+        tokens = sp.getInt(KEY_TOKENS, tokens);
+        lives = sp.getInt(KEY_LIVES, lives);
+        lastLifeTimeMillis = sp.getLong(KEY_LAST_LIFE_TIME, lastLifeTimeMillis);
+
+        Set<String> savedSet = sp.getStringSet(KEY_COMPLETED_COURSES, null);
+        if (savedSet != null) {
+            completedCourses = new HashSet<>(savedSet);
+        } else if (completedCourses == null) {
+            completedCourses = new HashSet<>();
+        }
+
+        // Safety clamp
+        if (lives < 0) lives = 0;
+        if (lives > MAX_LIVES) lives = MAX_LIVES;
+    }
+
+    /** Save hearts, tokens, timer and completed courses into SharedPreferences for this user. */
+    public void saveToPrefs(Context context) {
+        SharedPreferences sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+
+        FirebaseUser current = FirebaseAuth.getInstance().getCurrentUser();
+        String currentUserId = (current != null) ? current.getUid() : null;
+
+        SharedPreferences.Editor ed = sp.edit();
+        if (currentUserId != null) {
+            ed.putString(KEY_USER_ID, currentUserId);
+        }
+
+        ed.putInt(KEY_TOKENS, tokens);
+        ed.putInt(KEY_LIVES, lives);
+        ed.putLong(KEY_LAST_LIFE_TIME, lastLifeTimeMillis);
+        ed.putStringSet(KEY_COMPLETED_COURSES,
+                (completedCourses != null) ? new HashSet<>(completedCourses) : new HashSet<>());
+        ed.apply();
+    }
+
+    // ---------- Hearts & tokens ----------
+
+    public void addTokens(int amount) {
+        if (amount <= 0) return;
+        tokens += amount;
+    }
+
+    public boolean trySpendTokens(int cost) {
+        if (tokens >= cost) {
+            tokens -= cost;
+            return true;
+        }
+        return false;
+    }
+
+    public boolean loseLife() {
+        if (lives <= 0) {
+            return false;
+        }
+        lives--;
+        lastLifeTimeMillis = System.currentTimeMillis();
+        return true;
+    }
+
+    /** Regenerate lives over time. Call in MainActivity.updateHeader(). */
+    public void updateLivesFromTimer() {
+        long now = System.currentTimeMillis();
+        if (lives >= MAX_LIVES) {
+            lastLifeTimeMillis = now;
+            return;
+        }
+
+        long elapsed = now - lastLifeTimeMillis;
+        if (elapsed < LIFE_INTERVAL_MILLIS) return;
+
+        long livesToAddLong = elapsed / LIFE_INTERVAL_MILLIS;
+        if (livesToAddLong <= 0) return;
+
+        int livesToAdd = (int) livesToAddLong;
+        int newLives = lives + livesToAdd;
+
+        if (newLives >= MAX_LIVES) {
+            lives = MAX_LIVES;
+            lastLifeTimeMillis = now;
+        } else {
+            lives = newLives;
+            long usedTime = livesToAddLong * LIFE_INTERVAL_MILLIS;
+            long remaining = elapsed - usedTime;
+            lastLifeTimeMillis = now - remaining;
+        }
+    }
+
+    public long millisUntilNextLife() {
+        if (lives >= MAX_LIVES) return 0;
+        long now = System.currentTimeMillis();
+        long elapsed = now - lastLifeTimeMillis;
+        long remaining = LIFE_INTERVAL_MILLIS - elapsed;
+        return Math.max(remaining, 0);
+    }
+
+    // ---------- Course helpers ----------
 
     public boolean isCourseCompleted(String courseId) {
         return completedCourses != null && completedCourses.contains(courseId);
@@ -75,79 +216,5 @@ public class GameState {
         if (courseId != null) {
             completedCourses.add(courseId);
         }
-    }
-
-    /** Try to spend tokens. Returns true if purchase succeeds. */
-    public boolean trySpendTokens(int cost) {
-        if (tokens >= cost) {
-            tokens -= cost;
-            return true;
-        }
-        return false;
-    }
-
-    /** Safely add tokens (for quiz rewards etc.). */
-    public void addTokens(int amount) {
-        if (amount <= 0) return;
-        tokens += amount;
-    }
-
-    /**
-     * Call this often (for example in MainActivity.updateHeader()
-     * or from a timer in ShopFragment) to update lives based on real time.
-     */
-    public void updateLivesFromTimer() {
-        long now = System.currentTimeMillis();
-
-        // If already full, just keep timestamp fresh and exit
-        if (lives >= MAX_LIVES) {
-            lastLifeTimeMillis = now;
-            return;
-        }
-
-        long elapsed = now - lastLifeTimeMillis;
-        if (elapsed < LIFE_INTERVAL_MILLIS) {
-            // Not enough time passed for a new life
-            return;
-        }
-
-        long livesToAddLong = elapsed / LIFE_INTERVAL_MILLIS;
-        if (livesToAddLong <= 0) return;
-
-        int livesToAdd = (int) livesToAddLong;
-        int newLives = lives + livesToAdd;
-
-        if (newLives >= MAX_LIVES) {
-            lives = MAX_LIVES;
-            // We've reached full; reset anchor to now
-            lastLifeTimeMillis = now;
-        } else {
-            lives = newLives;
-            // keep leftover time so progress toward next life isn't lost
-            long usedTime = livesToAddLong * LIFE_INTERVAL_MILLIS;
-            long remaining = elapsed - usedTime;
-            lastLifeTimeMillis = now - remaining;
-        }
-    }
-
-    /** Milliseconds until the next life is added (0 if already full). */
-    public long millisUntilNextLife() {
-        if (lives >= MAX_LIVES) return 0;
-
-        long now = System.currentTimeMillis();
-        long elapsed = now - lastLifeTimeMillis;
-        long remaining = LIFE_INTERVAL_MILLIS - elapsed;
-        return Math.max(remaining, 0);
-    }
-
-    /** Lose one life when the user makes a mistake. Returns true if life was lost. */
-    public boolean loseLife() {
-        if (lives <= 0) {
-            return false;           // already at 0, don't go negative
-        }
-        lives--;
-        // restart the regen timer from now
-        lastLifeTimeMillis = System.currentTimeMillis();
-        return true;
     }
 }

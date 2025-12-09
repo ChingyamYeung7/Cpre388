@@ -1,5 +1,6 @@
 package com.example.smartly;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -12,17 +13,10 @@ import com.example.smartly.UI.HomeFragment;
 import com.example.smartly.UI.LeaderboardFragment;
 import com.example.smartly.UI.ProfileFragment;
 import com.example.smartly.UI.ShopFragment;
+import com.example.smartly.UI.QuizFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import android.util.Log;
-import android.content.Intent;
 import com.google.firebase.auth.FirebaseAuth;
-
-import com.example.smartly.GameState;
-import com.example.smartly.User;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -37,12 +31,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() == null) {
+        // Ensure user is logged in
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
             Intent intent = new Intent(this, LoginActivity.class);
             startActivity(intent);
             finish();
             return;
         }
+
+        // Load persisted state (hearts, tokens, completed courses)
+        GameState.get().loadFromPrefs(this);
 
         tvHeaderUsername = findViewById(R.id.tvHeaderUsername);
         tvHeaderTokens   = findViewById(R.id.tvHeaderTokens);
@@ -65,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
                             Toast.LENGTH_SHORT).show();
                     fragment = new HomeFragment();
                 } else {
-                    fragment = com.example.smartly.UI.QuizFragment.newInstance(courseId);
+                    fragment = QuizFragment.newInstance(courseId);
                 }
 
             } else if (id == R.id.nav_leaderboard) {
@@ -84,11 +82,17 @@ public class MainActivity extends AppCompatActivity {
             return true;
         });
 
-        // default screen
+        // Default screen
         loadFragment(new HomeFragment());
         updateHeader();
 
         db = FirebaseFirestore.getInstance();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateHeader();
     }
 
     // Called from HomeFragment when a task is selected
@@ -113,25 +117,22 @@ public class MainActivity extends AppCompatActivity {
         gs.updateLivesFromTimer();
 
         // Username
-        if (gs.profile != null && gs.profile.username != null && !gs.profile.username.isEmpty()) {
+        if (gs.profile != null &&
+                gs.profile.username != null &&
+                !gs.profile.username.isEmpty()) {
             tvHeaderUsername.setText(gs.profile.username);
+        } else if (FirebaseAuth.getInstance().getCurrentUser() != null &&
+                FirebaseAuth.getInstance().getCurrentUser().getEmail() != null) {
+            tvHeaderUsername.setText(FirebaseAuth.getInstance().getCurrentUser().getEmail());
         } else {
             tvHeaderUsername.setText("Guest");
         }
 
-        // Tokens + lives
+        // Tokens + hearts
         tvHeaderTokens.setText("  💎 " + gs.tokens);
         tvHeaderLives.setText("  ❤️ " + gs.lives + "/" + GameState.MAX_LIVES);
-    }
 
-    private void saveUserToDatabase(User user) {
-        db.collection("users")
-                .add(user)
-                .addOnSuccessListener(documentReference ->
-                        android.util.Log.d("SmartlyFire", "User added with ID: " + documentReference.getId())
-                )
-                .addOnFailureListener(e ->
-                        android.util.Log.w("SmartlyFire", "Error adding user", e)
-                );
+        // Persist latest state
+        gs.saveToPrefs(this);
     }
 }

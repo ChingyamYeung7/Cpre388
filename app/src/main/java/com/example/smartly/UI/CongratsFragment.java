@@ -27,7 +27,9 @@ public class CongratsFragment extends Fragment {
     private int score;
     private int total;
 
-    public CongratsFragment() {}
+    public CongratsFragment() {
+        // Required empty public constructor
+    }
 
     public static CongratsFragment newInstance(String courseId, int score, int total) {
         CongratsFragment fragment = new CongratsFragment();
@@ -42,6 +44,7 @@ public class CongratsFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         if (getArguments() != null) {
             courseId = getArguments().getString(ARG_COURSE_ID);
             score = getArguments().getInt(ARG_SCORE);
@@ -54,6 +57,7 @@ public class CongratsFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
+
         View v = inflater.inflate(R.layout.fragment_congrats, container, false);
 
         TextView tvTitle = v.findViewById(R.id.tvCongratsTitle);
@@ -64,18 +68,21 @@ public class CongratsFragment extends Fragment {
         String name = (course != null) ? course.title : "this course";
 
         tvTitle.setText("🎉 Congratulations!");
-        tvMessage.setText("You finished " + name + "!\n"
-                + "Your score: " + score + " / " + total + "\n\n"
-                + "You can now go back to Home and pick the next course.");
+        tvMessage.setText(
+                "You finished " + name + "!\n"
+                        + "Your score: " + score + " / " + total + "\n\n"
+                        + "You can now go back to Home and pick the next course."
+        );
 
         btnHome.setOnClickListener(view -> {
-            // Clear back stack and return to Home
-            FragmentManager fm = requireActivity().getSupportFragmentManager();
-            fm.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+            if (!isAdded()) {
+                return; // Fragment not attached → avoid crash
+            }
 
-            // Replace with HomeFragment as the main screen
+            FragmentManager fm = requireActivity().getSupportFragmentManager();
             fm.beginTransaction()
                     .replace(R.id.fragment_container, new HomeFragment())
+                    .addToBackStack("home")
                     .commit();
         });
 

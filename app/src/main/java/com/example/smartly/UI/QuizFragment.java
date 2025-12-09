@@ -1,6 +1,7 @@
 package com.example.smartly.UI;
 
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -18,7 +19,11 @@ import com.example.smartly.GameState;
 import com.example.smartly.MainActivity;
 import com.example.smartly.R;
 import com.example.smartly.model.Question;
+import com.example.smartly.model.ScoreEntry;
 import com.example.smartly.util.QuestionRepository;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +43,12 @@ public class QuizFragment extends Fragment {
     private RadioButton rb1, rb2, rb3;
     private Button btnNext;
 
-    public QuizFragment() {}
+    // diamonds per correct
+    private static final int TOKENS_PER_CORRECT = 5;
+
+    public QuizFragment() {
+        // Required empty public constructor
+    }
 
     public static QuizFragment newInstance(String courseId) {
         QuizFragment fragment = new QuizFragment();
@@ -111,7 +121,6 @@ public class QuizFragment extends Fragment {
 
         // Explanation BEFORE the question
         tvExplanation.setText(q.getExplanation());
-
         tvQuestion.setText("Choose the best answer:");
 
         String[] opts = q.getOptions();
@@ -136,25 +145,26 @@ public class QuizFragment extends Fragment {
         }
 
         int selectedIndex;
-        if (checkedId == R.id.rbOption1) selectedIndex = 0;
+        if (checkedId == R.id.rbOption1)      selectedIndex = 0;
         else if (checkedId == R.id.rbOption2) selectedIndex = 1;
-        else selectedIndex = 2;
+        else                                  selectedIndex = 2;
 
         Question q = questions.get(currentIndex);
         GameState gs = GameState.get();
 
         if (selectedIndex == q.getCorrectIndex()) {
+            // ✅ Correct: add diamonds +1 score
             score++;
-            Toast.makeText(getContext(), "✅ Correct!", Toast.LENGTH_SHORT).show();
+            gs.addTokens(TOKENS_PER_CORRECT);
 
+            Toast.makeText(
+                    getContext(),
+                    "✅ Correct! +" + TOKENS_PER_CORRECT + " 💎 (total: " + gs.tokens + ")",
+                    Toast.LENGTH_SHORT
+            ).show();
         } else {
-            // ❌ Wrong → lose life
+            // ❌ Wrong: lose heart
             gs.loseLife();
-
-            // Update header in MainActivity (hearts visually change)
-            if (getActivity() instanceof MainActivity) {
-                ((MainActivity) getActivity()).updateHeader();
-            }
 
             if (gs.lives <= 0) {
                 Toast.makeText(
@@ -163,12 +173,14 @@ public class QuizFragment extends Fragment {
                         Toast.LENGTH_LONG
                 ).show();
 
+                // disable further interaction
                 btnNext.setEnabled(false);
                 rb1.setEnabled(false);
                 rb2.setEnabled(false);
                 rb3.setEnabled(false);
-                return;
 
+                refreshHeader();
+                return;
             } else {
                 Toast.makeText(
                         getContext(),
@@ -177,6 +189,9 @@ public class QuizFragment extends Fragment {
                 ).show();
             }
         }
+
+        // Update header (hearts + diamonds + save to prefs)
+        refreshHeader();
 
         currentIndex++;
 
@@ -188,18 +203,59 @@ public class QuizFragment extends Fragment {
     }
 
     private void onQuizFinished() {
-        GameState.get().markCourseCompleted(courseId);
+        GameState gs = GameState.get();
+        gs.markCourseCompleted(courseId);
 
-        CongratsFragment fragment = CongratsFragment.newInstance(
-                courseId,
-                score,
-                questions.size()
-        );
+        // Safety: fragment still attached?
+        if (!isAdded()) {
+            // state is marked in memory; if needed you still persisted earlier via refreshHeader()
+            return;
+        }
 
+        // Persist completed course + hearts/diamonds
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).updateHeader(); // calls saveToPrefs(...)
+        } else if (getContext() != null) {
+            gs.saveToPrefs(getContext().getApplicationContext());
+        }
+
+        // Save score to Firestore leaderboard
+        String name;
+        if (gs.profile != null &&
+                gs.profile.username != null &&
+                !gs.profile.username.isEmpty()) {
+            name = gs.profile.username;
+        } else {
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user != null && user.getEmail() != null) {
+                name = user.getEmail();
+            } else {
+                name = "Player";
+            }
+        }
+
+        ScoreEntry entry = new ScoreEntry(name, score);
+        FirebaseFirestore.getInstance()
+                .collection("scores")
+                .add(entry);
+
+        if (!isAdded()) {
+            // If fragment got detached while saving leaderboard, just stop
+            return;
+        }
+
+        // Open Congrats screen (stays inside app)
+        CongratsFragment fragment = CongratsFragment.newInstance(courseId, score, questions.size());
         requireActivity().getSupportFragmentManager()
                 .beginTransaction()
                 .replace(R.id.fragment_container, fragment)
                 .addToBackStack("congrats")
                 .commit();
+    }
+
+    private void refreshHeader() {
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).updateHeader();
+        }
     }
 }

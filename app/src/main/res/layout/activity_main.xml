@@ -33,6 +33,7 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"/>
 
+            <!-- Username -->
             <TextView
                 android:id="@+id/tvHeaderUsername"
                 android:layout_width="wrap_content"
@@ -40,20 +41,24 @@
                 android:text="Guest"
                 android:textColor="@android:color/white"/>
 
+            <!-- Tokens -->
             <TextView
                 android:id="@+id/tvHeaderTokens"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="  💎 0"
                 android:textColor="@android:color/white"/>
-        </LinearLayout>
-            <TextView
-                 android:id="@+id/tvHeaderLives"
-                 android:layout_width="wrap_content"
-                 android:layout_height="wrap_content"
-                 android:text="  ❤️ 3"
-                 android:textColor="@android:color/white" />
 
+            <!-- ❤️ Hearts FIXED: now inside header -->
+            <TextView
+                android:id="@+id/tvHeaderLives"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="  ❤️ 5/5"
+                android:textColor="@android:color/white"/>
+        </LinearLayout>
+
+        <!-- Fragment container -->
         <FrameLayout
             android:id="@+id/fragment_container"
             android:layout_width="match_parent"
@@ -61,6 +66,7 @@
             android:layout_weight="1"/>
     </LinearLayout>
 
+    <!-- Bottom navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
         android:layout_width="match_parent"

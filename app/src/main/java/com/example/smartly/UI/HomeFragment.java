@@ -30,20 +30,28 @@ public class HomeFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
+
         View v = inflater.inflate(R.layout.fragment_home, container, false);
 
         LinearLayout courseContainer = v.findViewById(R.id.courseContainer);
-
-        List<Course> courses = CourseRepository.getAllCourses();
         GameState gs = GameState.get();
 
-        for (Course c : courses) {
-            TextView panel = new TextView(requireContext());
-            panel.setText(c.title + "\n" + c.shortDesc);
-            panel.setTextSize(18f);
-            panel.setPadding(32, 32, 32, 32);
-            panel.setTextColor(Color.WHITE);
+        // Get all courses/tasks
+        List<Course> courses = CourseRepository.getAllCourses();
 
+        courseContainer.removeAllViews();
+
+        for (Course c : courses) {
+            View panel = inflater.inflate(R.layout.item_course_panel, courseContainer, false);
+
+            TextView tvTitle = panel.findViewById(R.id.tvCourseTitle);
+            TextView tvDesc  = panel.findViewById(R.id.tvCourseDescription);
+
+            // Use actual fields from Course.java
+            tvTitle.setText(c.title);
+            tvDesc.setText(c.shortDesc);
+
+            // Color change if completed
             boolean completed = gs.isCourseCompleted(c.id);
 
             if (completed) {
@@ -54,7 +62,7 @@ public class HomeFragment extends Fragment {
                 panel.setBackgroundColor(Color.parseColor("#1565C0"));
             }
 
-            // Space between panels
+            // Set spacing between course tiles
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
@@ -62,6 +70,7 @@ public class HomeFragment extends Fragment {
             lp.setMargins(0, 0, 0, 32);
             panel.setLayoutParams(lp);
 
+            // On click → open Write tab → start the quiz
             panel.setOnClickListener(view -> {
                 gs.currentCourseId = c.id;
                 openQuizForCourse(c.id);
@@ -74,11 +83,10 @@ public class HomeFragment extends Fragment {
     }
 
     private void openQuizForCourse(String courseId) {
-        QuizFragment fragment = QuizFragment.newInstance(courseId);
-        requireActivity().getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.fragment_container, fragment)
-                .addToBackStack("quiz")
-                .commit();
+        GameState.get().currentCourseId = courseId;
+
+        if (getActivity() instanceof MainActivity) {
+            ((MainActivity) getActivity()).openWriteTabForCurrentCourse();
+        }
     }
 }
