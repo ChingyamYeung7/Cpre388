@@ -23,6 +23,8 @@ import java.util.List;
 
 public class HomeFragment extends Fragment {
 
+    private LinearLayout courseContainer;
+
     public HomeFragment() {}
 
     @Nullable
@@ -32,11 +34,26 @@ public class HomeFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
 
         View v = inflater.inflate(R.layout.fragment_home, container, false);
+        courseContainer = v.findViewById(R.id.courseContainer);
 
-        LinearLayout courseContainer = v.findViewById(R.id.courseContainer);
+        renderCourses(inflater);
+        return v;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // ✅ makes panel colors update even if HomeFragment isn't recreated
+        if (getView() != null) {
+            LayoutInflater inflater = LayoutInflater.from(getContext());
+            renderCourses(inflater);
+        }
+    }
+
+    private void renderCourses(LayoutInflater inflater) {
+        if (courseContainer == null) return;
+
         GameState gs = GameState.get();
-
-        // Get all courses/tasks
         List<Course> courses = CourseRepository.getAllCourses();
 
         courseContainer.removeAllViews();
@@ -47,22 +64,17 @@ public class HomeFragment extends Fragment {
             TextView tvTitle = panel.findViewById(R.id.tvCourseTitle);
             TextView tvDesc  = panel.findViewById(R.id.tvCourseDescription);
 
-            // Use actual fields from Course.java
             tvTitle.setText(c.title);
             tvDesc.setText(c.shortDesc);
 
-            // Color change if completed
             boolean completed = gs.isCourseCompleted(c.id);
 
             if (completed) {
-                // Completed = green
-                panel.setBackgroundColor(Color.parseColor("#2E7D32"));
+                panel.setBackgroundColor(Color.parseColor("#2E7D32")); // green
             } else {
-                // Not completed yet = blue
-                panel.setBackgroundColor(Color.parseColor("#1565C0"));
+                panel.setBackgroundColor(Color.parseColor("#1565C0")); // blue
             }
 
-            // Set spacing between course tiles
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
@@ -70,7 +82,6 @@ public class HomeFragment extends Fragment {
             lp.setMargins(0, 0, 0, 32);
             panel.setLayoutParams(lp);
 
-            // On click → open Write tab → start the quiz
             panel.setOnClickListener(view -> {
                 gs.currentCourseId = c.id;
                 openQuizForCourse(c.id);
@@ -78,13 +89,10 @@ public class HomeFragment extends Fragment {
 
             courseContainer.addView(panel);
         }
-
-        return v;
     }
 
     private void openQuizForCourse(String courseId) {
         GameState.get().currentCourseId = courseId;
-
         if (getActivity() instanceof MainActivity) {
             ((MainActivity) getActivity()).openWriteTabForCurrentCourse();
         }

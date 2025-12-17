@@ -3,17 +3,21 @@ package com.example.smartly.util;
 import com.example.smartly.model.Question;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class QuestionRepository {
 
-    // Central API: ask for questions by courseId
     public static List<Question> getQuestionsForCourse(String courseId) {
         switch (courseId) {
             case "week1_voltage":
                 return getWeek1VoltageQuestions();
             case "week2_current":
                 return getWeek2CurrentQuestions();
+            case "week3_resistors":
+                return getWeek3ResistorsQuestions();
+            case "week4_series":
+                return getWeek4SeriesQuestions();
             default:
                 return new ArrayList<>();
         }
@@ -23,82 +27,47 @@ public class QuestionRepository {
     private static List<Question> getWeek1VoltageQuestions() {
         List<Question> list = new ArrayList<>();
 
-        // Q1
-        list.add(new Question(
-                "Teacher: Water always flows from high places to low places.\n"
-                        + "Question: Why doesn’t water normally flow upward?",
+        list.add(Question.mcq(
+                "week1_voltage",
+                "Lesson: Voltage is like electrical “height” (energy level). Higher voltage means higher electrical potential.",
+                "Q1: Voltage is most similar to:",
                 new String[]{
-                        "Because of gravity / height difference",
-                        "Because it is lazy",
-                        "Because it is invisible"
+                        "Height / energy level",
+                        "Wire thickness",
+                        "Current flow speed"
                 },
                 0,
-                "week1_voltage"
+                "Correct — voltage represents electrical potential (like height).",
+                "Not quite — thickness and speed are not voltage."
         ));
 
-        // Q2
-        list.add(new Question(
-                "Teacher: A higher place stores more potential energy.\n"
-                        + "Imagine you jump off somewhere. From where do you feel more energy?",
+        list.add(Question.mcq(
+                "week1_voltage",
+                "Lesson: Electricity “wants to move” when there is a voltage difference (high to low).",
+                "Q2: What is required for current to start flowing?",
                 new String[]{
-                        "From a high platform",
-                        "From flat ground",
-                        "Same energy everywhere"
+                        "A voltage difference",
+                        "Only a resistor",
+                        "Only ground (0V) with nothing else"
                 },
                 0,
-                "week1_voltage"
+                "Yes — voltage difference provides the push.",
+                "No — you need a difference (high vs low)."
         ));
 
-        // Q3
-        list.add(new Question(
-                "Teacher: In the world of electricity, we also have a 'height'.\n"
-                        + "We call this height 'voltage'. Higher voltage = higher electrical level.",
+        // Technique (easy + not ambiguous)
+        list.add(Question.mcq(
+                "week1_voltage",
+                "Lesson: Ground is a reference point, defined as 0 V.",
+                "Q3 (Technique): If point A is 9 V and ground is 0 V, the voltage difference is:",
                 new String[]{
-                        "Voltage is like height for electricity",
-                        "Voltage is the color of electricity",
-                        "Voltage is the sound of electricity"
+                        "9 V",
+                        "0 V",
+                        "-9 V"
                 },
                 0,
-                "week1_voltage"
-        ));
-
-        // Q4
-        list.add(new Question(
-                "Teacher: Voltage difference makes electricity want to move.\n"
-                        + "Just like water flows from a high place to a low place.",
-                new String[]{
-                        "Electricity flows from high voltage to low voltage",
-                        "Electricity flows from low voltage to high voltage",
-                        "Electricity doesn’t flow at all"
-                },
-                0,
-                "week1_voltage"
-        ));
-
-        // Q5
-        list.add(new Question(
-                "Teacher: We call the lowest point 'ground'.\n"
-                        + "Ground is 0 volts, like the floor in our height example.",
-                new String[]{
-                        "Ground is the lowest point, 0 V",
-                        "Ground is the highest point",
-                        "Ground has no voltage concept"
-                },
-                0,
-                "week1_voltage"
-        ));
-
-        // Q6 (concept summary)
-        list.add(new Question(
-                "Teacher: So voltage is like the height of a slide.\n"
-                        + "The higher the slide, the more the water/electricity wants to go down.",
-                new String[]{
-                        "Voltage is like the height of a slide",
-                        "Voltage is like the color of a slide",
-                        "Voltage is like the sound of a slide"
-                },
-                0,
-                "week1_voltage"
+                "Correct — 9V above ground means a 9V difference.",
+                "Careful — ground is 0V, so the difference is 9V."
         ));
 
         return list;
@@ -108,82 +77,138 @@ public class QuestionRepository {
     private static List<Question> getWeek2CurrentQuestions() {
         List<Question> list = new ArrayList<>();
 
-        // Q1
-        list.add(new Question(
-                "Teacher: Last week we said voltage is like height difference.\n"
-                        + "If there is height difference, water will flow.",
+        list.add(Question.mcq(
+                "week2_current",
+                "Lesson: Current is the flow rate of electric charge (like water flow rate in a pipe).",
+                "Q1: Electric current is:",
                 new String[]{
-                        "That water flow is called 'water current'",
-                        "That water flow is called 'water color'",
-                        "That water flow is called 'water sound'"
+                        "Flow of electric charge",
+                        "Electrical height",
+                        "Opposition to flow"
                 },
                 0,
-                "week2_current"
+                "Correct — current is charge flow per time.",
+                "No — height is voltage; opposition is resistance."
         ));
 
-        // Q2
-        list.add(new Question(
-                "Teacher: In electricity, something flows too – not water but electrons.\n"
-                        + "The flow of electrons is called 'electric current'.",
+        list.add(Question.mcq(
+                "week2_current",
+                "Lesson: Voltage is the push. With no voltage difference, there is no push.",
+                "Q2: If the voltage difference is 0V, current is:",
                 new String[]{
-                        "Current is the flow of electricity",
-                        "Current is the shape of the wire",
-                        "Current is just voltage with a new name"
+                        "0 (no flow)",
+                        "Maximum",
+                        "Random"
                 },
                 0,
-                "week2_current"
+                "Correct — no push means no flow (simplified model).",
+                "No — current needs a voltage difference."
         ));
 
-        // Q3
-        list.add(new Question(
-                "Teacher: Voltage is like the height difference that pushes water.\n"
-                        + "Without height difference, water will not flow.",
+        // Technique rule
+        list.add(Question.mcq(
+                "week2_current",
+                "Lesson: Conventional current direction is defined from high voltage to low voltage.",
+                "Q3 (Technique): Conventional current direction is:",
                 new String[]{
-                        "Without voltage, there is no current",
-                        "Without voltage, current gets bigger",
-                        "Current and voltage have no relationship"
+                        "High voltage → low voltage",
+                        "Low voltage → high voltage",
+                        "No defined direction"
                 },
                 0,
-                "week2_current"
+                "Correct — that’s the definition used in circuit diagrams.",
+                "Not correct — diagrams use high → low for conventional current."
         ));
 
-        // Q4
-        list.add(new Question(
-                "Teacher: We define the direction of current as from high voltage to low voltage.\n"
-                        + "Even though electrons move the opposite way, we will use this rule.",
+        return list;
+    }
+
+    // ---------- WEEK 3: RESISTORS ----------
+    private static List<Question> getWeek3ResistorsQuestions() {
+        List<Question> list = new ArrayList<>();
+
+        list.add(Question.mcq(
+                "week3_resistors",
+                "Lesson: A resistor limits current. More resistance means less current if voltage stays the same (I = V/R).",
+                "Q1: Main job of a resistor:",
                 new String[]{
-                        "Current flows from high voltage to low voltage",
-                        "Current flows from low voltage to high voltage",
-                        "Current direction is completely random"
+                        "Limit current",
+                        "Increase voltage",
+                        "Create energy"
                 },
                 0,
-                "week2_current"
+                "Correct — resistors limit current.",
+                "No — resistors don’t increase voltage or create energy."
         ));
 
-        // Q5
-        list.add(new Question(
-                "Teacher: The size of current is like how strong the water flow is.\n"
-                        + "Bigger current = more charge flowing every second.",
+        list.add(Question.mcq(
+                "week3_resistors",
+                "Lesson: Ohm’s Law: I = V/R. If R goes up (same V), I goes down.",
+                "Q2: If resistance increases, current will:",
                 new String[]{
-                        "If a bulb is brighter, current is larger",
-                        "If a bulb is brighter, current is smaller",
-                        "Bulb brightness has nothing to do with current"
+                        "Decrease",
+                        "Increase",
+                        "Stay the same"
                 },
                 0,
-                "week2_current"
+                "Correct — bigger R gives smaller I.",
+                "Not quite — use I = V/R."
         ));
 
-        // Q6 summary
-        list.add(new Question(
-                "Teacher: Current is the flow of electricity in a wire.\n"
-                        + "Voltage is the push; current is the actual flow.",
+        // Drag-drop technique: cause → effect, clear and non-ambiguous
+        list.add(Question.dragDropOrder(
+                "week3_resistors",
+                "Lesson: Resistance affects how easily current flows.",
+                "Q3 (Drag): Arrange cause → effect:",
+                Arrays.asList("Resistance increases", "Harder for current to flow", "Current decreases"),
+                Arrays.asList("Resistance increases", "Harder for current to flow", "Current decreases"),
+                "Perfect — that cause-and-effect chain is correct.",
+                "Try again: resistance ↑ → harder to flow → current ↓."
+        ));
+
+        return list;
+    }
+
+    // ---------- WEEK 4: SERIES CIRCUITS ----------
+    private static List<Question> getWeek4SeriesQuestions() {
+        List<Question> list = new ArrayList<>();
+
+        list.add(Question.mcq(
+                "week4_series",
+                "Lesson: A series circuit has ONE path for current. Components are end-to-end.",
+                "Q1: A series circuit means:",
                 new String[]{
-                        "Current is like water flowing in a pipe",
-                        "Current is like the pipe’s color",
-                        "Current is like the pipe’s name"
+                        "One path for current",
+                        "Many paths for current",
+                        "No current can ever flow"
                 },
                 0,
-                "week2_current"
+                "Correct — series has one path.",
+                "No — many paths describes parallel."
+        ));
+
+        list.add(Question.dragDropOrder(
+                "week4_series",
+                "Lesson: In series, current flows through each component in order along one loop.",
+                "Q2 (Drag): Arrange a valid series path order:",
+                Arrays.asList("Battery", "Resistor", "LED"),
+                Arrays.asList("Battery", "Resistor", "LED"),
+                "Correct — that forms a simple series loop order.",
+                "In series, it’s one path: source → component → component."
+        ));
+
+        list.add(Question.mcq(
+                "week4_series",
+                "Lesson: In a series circuit, current does not split.",
+                "Q3: Which statement is TRUE in series?",
+                new String[]{
+                        "Current is the same everywhere",
+                        "Voltage is the same everywhere",
+                        "Resistance becomes zero"
+                },
+                0,
+                "Correct — current is the same through all series components.",
+                "No — voltage divides in series; current stays the same."
         ));
 
         return list;
