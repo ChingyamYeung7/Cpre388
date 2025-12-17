@@ -7,9 +7,24 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:gravity="center_horizontal"
         android:padding="16dp">
 
-        <!-- Editable username -->
+        <ImageView
+            android:id="@+id/ivProfileAvatar"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:src="@drawable/cool_pepe"
+            android:scaleType="fitCenter"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/btnChangeAvatar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Change Avatar"
+            android:layout_marginBottom="24dp"/>
+
         <EditText
             android:id="@+id/etUsername"
             android:layout_width="match_parent"
@@ -18,49 +33,14 @@
             android:inputType="textPersonName"
             android:layout_marginBottom="12dp" />
 
-        <!-- Editable email -->
         <EditText
             android:id="@+id/etEmail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Email"
             android:inputType="textEmailAddress"
-            android:layout_marginBottom="12dp" />
+            android:layout_marginBottom="24dp" />
 
-        <!-- Avatar selection -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Choose an avatar:"
-            android:layout_marginBottom="4dp" />
-
-        <RadioGroup
-            android:id="@+id/rgAvatar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="16dp">
-
-            <RadioButton
-                android:id="@+id/rbAvatar1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🙂" />
-
-            <RadioButton
-                android:id="@+id/rbAvatar2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="⚡" />
-
-            <RadioButton
-                android:id="@+id/rbAvatar3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="🔧" />
-        </RadioGroup>
-
-        <!-- Buttons: save / load / delete profile -->
         <Button
             android:id="@+id/btnSaveProfile"
             android:layout_width="match_parent"
@@ -80,24 +60,25 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Delete Profile"
+            android:backgroundTint="#FF9800"
             android:layout_marginBottom="8dp" />
 
-        <!-- NEW: Logout button -->
         <Button
             android:id="@+id/btnLogout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Log out"
+            android:backgroundTint="#D32F2F"
             android:layout_marginTop="8dp" />
 
-        <!-- Current course display -->
         <TextView
             android:id="@+id/tvCurrentCourse"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Current course: -"
+            android:textAlignment="center"
             android:textStyle="italic"
-            android:layout_marginTop="12dp" />
+            android:layout_marginTop="24dp" />
 
     </LinearLayout>
 </ScrollView>

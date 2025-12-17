@@ -1,8 +1,7 @@
 package com.example.smartly.UI;
 
-import android.content.Context;
+import android.app.AlertDialog;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -10,8 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,145 +25,170 @@ import com.example.smartly.model.Course;
 import com.example.smartly.model.UserProfile;
 import com.example.smartly.util.CourseRepository;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class ProfileFragment extends Fragment {
 
     private EditText etUsername, etEmail;
-    private RadioGroup rgAvatar;
+    private ImageView ivAvatar;
     private TextView tvCurrentCourse;
+
+    private FirebaseFirestore db;
+    private FirebaseAuth auth;
+
+    private String currentAvatarName = "avatar_default";
+
+    private final String[] AVATAR_OPTIONS = {
+            "avatar_default",
+            "cool_pepe",
+            "pepe_2",
+            "pepe_3",
+            "pepe_4",
+            "pepe_5",
+            "pepe_6"
+    };
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_profile, container, false);
 
+        // Init Views
         etUsername = v.findViewById(R.id.etUsername);
         etEmail = v.findViewById(R.id.etEmail);
-        rgAvatar = v.findViewById(R.id.rgAvatar);
-        Button btnSave = v.findViewById(R.id.btnSaveProfile);
-        Button btnLoad = v.findViewById(R.id.btnLoadProfile);
-        Button btnDelete = v.findViewById(R.id.btnDeleteProfile);
-        Button btnLogout = v.findViewById(R.id.btnLogout);
+        ivAvatar = v.findViewById(R.id.ivProfileAvatar);
         tvCurrentCourse = v.findViewById(R.id.tvCurrentCourse);
 
-        updateCurrentCourse();
+        Button btnChangeAvatar = v.findViewById(R.id.btnChangeAvatar);
+        Button btnSave = v.findViewById(R.id.btnSaveProfile);
+        Button btnLoad = v.findViewById(R.id.btnLoadProfile);   // Restored
+        Button btnDelete = v.findViewById(R.id.btnDeleteProfile); // Restored
+        Button btnLogout = v.findViewById(R.id.btnLogout);
 
+        // Init Firebase
+        db = FirebaseFirestore.getInstance();
+        auth = FirebaseAuth.getInstance();
+
+        // Listeners
+        btnChangeAvatar.setOnClickListener(view -> showAvatarDialog());
         btnSave.setOnClickListener(view -> saveProfile());
-        btnLoad.setOnClickListener(view -> loadProfile());
-        btnDelete.setOnClickListener(view -> deleteProfile());
+        btnLoad.setOnClickListener(view -> loadProfile());     // Restored Logic
+        btnDelete.setOnClickListener(view -> deleteProfile()); // Restored Logic
         btnLogout.setOnClickListener(view -> logout());
+
+        // Load Data automatically on start
+        loadProfile();
+        updateCurrentCourse();
 
         return v;
     }
 
+    private void showAvatarDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("Choose your Pepe");
+        builder.setItems(AVATAR_OPTIONS, (dialog, which) -> {
+            currentAvatarName = AVATAR_OPTIONS[which];
+            updateAvatarView(currentAvatarName);
+        });
+        builder.show();
+    }
+
+    private void updateAvatarView(String fileName) {
+        int resId = getResources().getIdentifier(fileName, "drawable", requireContext().getPackageName());
+        if (resId != 0) {
+            ivAvatar.setImageResource(resId);
+        }
+    }
+
+
     private void saveProfile() {
         String username = etUsername.getText().toString().trim();
         String email = etEmail.getText().toString().trim();
-        if (TextUtils.isEmpty(username) || TextUtils.isEmpty(email)) {
-            Toast.makeText(getContext(), "Please enter username and email", Toast.LENGTH_SHORT).show();
+
+        if (TextUtils.isEmpty(username)) {
+            Toast.makeText(getContext(), "Username required", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        int checkedId = rgAvatar.getCheckedRadioButtonId();
-        RadioButton rb = rgAvatar.findViewById(checkedId);
-        String avatar = rb != null ? rb.getText().toString() : "🙂";
+        UserProfile profile = new UserProfile(username, email, currentAvatarName);
 
-        UserProfile profile = new UserProfile(username, email, avatar);
+        // 1. Update GameState
         GameState.get().profile = profile;
-
-        SharedPreferences prefs = requireContext()
-                .getSharedPreferences("smartly_prefs", Context.MODE_PRIVATE);
-        prefs.edit()
-                .putString("username", username)
-                .putString("email", email)
-                .putString("avatar", avatar)
-                .apply();
-
         if (getActivity() instanceof MainActivity) {
             ((MainActivity) getActivity()).updateHeader();
         }
 
-        Toast.makeText(getContext(), "Profile saved", Toast.LENGTH_SHORT).show();
+        // 2. Save to Cloud
+        if (auth.getCurrentUser() != null) {
+            db.collection("users").document(auth.getCurrentUser().getUid())
+                    .set(profile)
+                    .addOnSuccessListener(aVoid -> Toast.makeText(getContext(), "Profile Saved!", Toast.LENGTH_SHORT).show())
+                    .addOnFailureListener(e -> Toast.makeText(getContext(), "Save Failed", Toast.LENGTH_SHORT).show());
+        }
     }
 
     private void loadProfile() {
-        SharedPreferences prefs = requireContext()
-                .getSharedPreferences("smartly_prefs", Context.MODE_PRIVATE);
+        if (auth.getCurrentUser() == null) return;
 
-        String username = prefs.getString("username", "");
-        String email = prefs.getString("email", "");
-        String avatar = prefs.getString("avatar", "🙂");
+        // Manual visual feedback
+        Toast.makeText(getContext(), "Loading...", Toast.LENGTH_SHORT).show();
 
-        etUsername.setText(username);
-        etEmail.setText(email);
+        db.collection("users").document(auth.getCurrentUser().getUid())
+                .get()
+                .addOnSuccessListener(document -> {
+                    if (document.exists()) {
+                        UserProfile profile = document.toObject(UserProfile.class);
+                        if (profile != null) {
+                            etUsername.setText(profile.getUsername());
+                            etEmail.setText(profile.getEmail());
 
-        for (int i = 0; i < rgAvatar.getChildCount(); i++) {
-            View child = rgAvatar.getChildAt(i);
-            if (child instanceof RadioButton) {
-                RadioButton rb = (RadioButton) child;
-                if (avatar.equals(rb.getText().toString())) {
-                    rb.setChecked(true);
-                    break;
-                }
-            }
-        }
+                            currentAvatarName = profile.getAvatarName();
+                            if (currentAvatarName == null) currentAvatarName = "avatar_default";
+                            updateAvatarView(currentAvatarName);
 
-        GameState.get().profile = new UserProfile(username, email, avatar);
-
-        if (getActivity() instanceof MainActivity) {
-            ((MainActivity) getActivity()).updateHeader();
-        }
-
-        Toast.makeText(getContext(), "Profile loaded", Toast.LENGTH_SHORT).show();
+                            GameState.get().profile = profile;
+                            if (getActivity() instanceof MainActivity) {
+                                ((MainActivity) getActivity()).updateHeader();
+                            }
+                            Toast.makeText(getContext(), "Profile Loaded!", Toast.LENGTH_SHORT).show();
+                        }
+                    } else {
+                        Toast.makeText(getContext(), "No profile found.", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     private void deleteProfile() {
-        SharedPreferences prefs = requireContext()
-                .getSharedPreferences("smartly_prefs", Context.MODE_PRIVATE);
-        prefs.edit().clear().apply();
-        etUsername.setText("");
-        etEmail.setText("");
-        rgAvatar.clearCheck();
+        if (auth.getCurrentUser() == null) return;
+
+        // 1. Delete from Firestore Database
+        db.collection("users").document(auth.getCurrentUser().getUid())
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    // 2. Delete Authentication Account
+                    auth.getCurrentUser().delete()
+                            .addOnSuccessListener(aVoid1 -> {
+                                Toast.makeText(getContext(), "Account Deleted", Toast.LENGTH_SHORT).show();
+                                logout(); // Go back to login
+                            })
+                            .addOnFailureListener(e -> Toast.makeText(getContext(), "Failed to delete account auth", Toast.LENGTH_SHORT).show());
+                })
+                .addOnFailureListener(e -> Toast.makeText(getContext(), "Failed to delete database record", Toast.LENGTH_SHORT).show());
+    }
+
+    private void logout() {
+        auth.signOut();
         GameState.get().profile = null;
-
-        if (getActivity() instanceof MainActivity) {
-            ((MainActivity) getActivity()).updateHeader();
-        }
-
-        Toast.makeText(getContext(), "Profile deleted", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(requireContext(), LoginActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
     }
 
     private void updateCurrentCourse() {
         String id = GameState.get().currentCourseId;
         Course course = CourseRepository.getCourseById(id);
-        if (course != null) {
-            tvCurrentCourse.setText("Current course: " + course.title);
-        } else {
-            tvCurrentCourse.setText("Current course: -");
-        }
+        tvCurrentCourse.setText(course != null ? "Current: " + course.title : "Current: -");
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (tvCurrentCourse != null) {
-            updateCurrentCourse();
-        }
-    }
 
-    private void logout() {
-        // Sign out from Firebase
-        FirebaseAuth.getInstance().signOut();
-
-        // Clear in-memory state if you want
-        GameState.get().profile = null;
-
-        // Go back to LoginActivity and clear back stack
-        Intent intent = new Intent(requireContext(), LoginActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-    }
 }
